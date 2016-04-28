@@ -11,21 +11,41 @@ const months = [ "10", "11" ];
 const days = [ "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "01", "02", "03", "04", "05" ];
 
 let historyData = {};
+let apiCalls = {};
 
 function url( { year, month, day } ) {
   return `http://api.wunderground.com/api/${ config.weatherUndergroundApiKey }/history_${ year }${ month }${ day }/q/CO/somerset.json`;
 }
 
-function saveData() {
-  pfs.writeFile( `${ __dirname }/weather-data.json`, JSON.stringify( historyData, null, 2 ), "utf-8" ).then( () => {
+function timeFormat( diff ) {
+  const LN1000 = Math.log( 1000 );
+  const UNIT_LABELS = [ " ns", " μs", " ms" ];
+  let minutes, seconds;
+
+  if ( diff[ 0 ] ) {
+    let s = diff[ 0 ] + diff[ 1 ] / 1e9;
+    let seconds = ( Math.round( s * 100 ) / 100 );
+
+    if( seconds >= 60 ) {
+      minutes = Math.round( seconds / 60 );
+      seconds = Math.round( ( ( seconds % 60 ) * 100 ) / 100 );
+      return `${ minutes }m ${ seconds }s`;
+    }
+
+    return `${ seconds }s`;
+  } else {
+    let magnitude = Math.floor( Math.log( diff[ 1 ] ) / LN1000 );
+    return Math.round( diff[ 1 ] / Math.pow( 1000, magnitude ) ) + UNIT_LABELS[ magnitude ];
+  }
+}
+
+function saveData( data ) {
+  return pfs.writeFile( `${ __dirname }/weather-data.json`, JSON.stringify( historyData, null, 2 ), "utf-8" ).then( () => {
     console.log( "Data successfully written to file weather-data.json" );
   } );
 }
 
 function fetchDataFor( { year, month, day } ) {
-  // const dateParts = { year: "2015", month: "10", day: "25" };
-  // const dataKey = `${ dateParts.year }${ dateParts.month }${ dateParts.day }`;
-
   return when.promise( ( resolve, reject ) => {
     setTimeout( () => {
       console.log( `Fetching data for ${ year }${ month }${ day }` );
@@ -38,9 +58,10 @@ function fetchDataFor( { year, month, day } ) {
         data: {}
       }
       historyData[ `${ year }${ month }${ day }`] = result;
+      console.log( "\tresult:", result );
       resolve( result );
-    }, 2000 );
-    // }, 10000 );
+    // }, 205 );
+    }, 7000 );
   } );
 
   // got( url( { year, month, day } ) )
@@ -58,6 +79,10 @@ function fetchDataFor( { year, month, day } ) {
 
 function fetchData( dates ) {
   let results = [];
+
+  // TODO: iterate through the data that has not been fetched yet, and
+  // fetch 17 records (dates) at a time, until the data for all dates
+  // has been downloaded and populated
 
   dates.forEach( date => {
     results.push( fetchDataFor.bind( null, date ) );
@@ -91,24 +116,36 @@ function calculateDatesToFetch() {
       startYear = ( startYear + 1 );
     }
 
-    console.log( "how many dates do we have to fetch?", dates.length );
+    console.log( `Fetching historical weather data for ${ dates.length } days over the past ${ years } years...\n` );
     resolve( dates );
   } );
 }
 
 function downloadData() {
+  const startTime = process.hrtime();
+
+  // TODO: open/load existing `weather-data.json` file if it exists
+  // if it exists, we don't need to `calculateDatesToFetch`, just
+  // use the data already loaded/saved in that file, and start
+  // processing/fetching data for dates that have not been fetched yet
+  // (need to make this an iterative process to prevent API abuse)
+
   calculateDatesToFetch()
     .then( dates => {
       fetchData( dates )
         .then( data => {
-          console.log( "did we get some data??", data );
+          saveData( data ).then( () => {
+            const diff = process.hrtime( startTime )
+            const time = timeFormat( diff );
+            console.log( "Process completed in ", time );
+          } );
         } )
         .catch( err => {
-          console.log( "OOPS", err );
+          console.log( "Error fetching data", err );
         } )
       } )
     .catch( err => {
-      console.log( "what is happening?", err );
+      console.log( "Error calculating dates to fetch data for", err );
     } );
 }
 
