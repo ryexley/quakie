@@ -1,5 +1,6 @@
 // this file is intended for downloading historical weather data
 // and persisting it to a file called `weather-data.json`
+const _ = require( "lodash" );
 const config = require( "../config" );
 const got = require( "got" );
 const pfs = require( "promised-io/fs" );
@@ -9,9 +10,13 @@ const sequence = require( "when/sequence" );
 const years = 30;
 const months = [ "10", "11" ];
 const days = [ "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "01", "02", "03", "04", "05" ];
+const runLimit = 17;
+const dailyApiCallLimit = 500;
 
+let startTime = {};
 let historyData = {};
 let apiCalls = {};
+let runIndex = 0;
 
 function url( { year, month, day } ) {
   return `http://api.wunderground.com/api/${ config.weatherUndergroundApiKey }/history_${ year }${ month }${ day }/q/CO/somerset.json`;
@@ -40,7 +45,9 @@ function timeFormat( diff ) {
 }
 
 function saveData( data ) {
-  return pfs.writeFile( `${ __dirname }/weather-data.json`, JSON.stringify( historyData, null, 2 ), "utf-8" ).then( () => {
+  const fileContents = _.extend( {}, { apiCalls: apiCalls }, historyData );
+
+  return pfs.writeFile( `${ __dirname }/weather-data.json`, JSON.stringify( fileContents, null, 2 ), "utf-8" ).then( () => {
     console.log( "Data successfully written to file weather-data.json" );
   } );
 }
@@ -48,53 +55,84 @@ function saveData( data ) {
 function fetchDataFor( { year, month, day } ) {
   return when.promise( ( resolve, reject ) => {
     setTimeout( () => {
-      console.log( `Fetching data for ${ year }${ month }${ day }` );
-      const result = {
-        date: {
-          year,
-          month,
-          day
-        },
-        data: {}
-      }
-      historyData[ `${ year }${ month }${ day }`] = result;
-      console.log( "\tresult:", result );
-      resolve( result );
-    // }, 205 );
+      const key = `${ year }${ month }${ day }`;
+      let result = {};
+      console.log( `Fetching data for ${ key }` );
+
+      got( url( { year, month, day } ) )
+        .then( response => {
+          result = {
+            parts: {
+              year,
+              month,
+              day
+            },
+            data: JSON.parse( response.body )
+          };
+
+          historyData.dates[ key ] = result;
+          resolve( result );
+        } )
+        .catch( err => {
+          historyData.dates[ key ] = {
+            message: `Error fetching data for ${ key }`,
+            error: err
+          }
+        } );
     }, 7000 );
   } );
-
-  // got( url( { year, month, day } ) )
-  //   .then( response => {
-  //   historyData[ dataKey ] = JSON.parse( response.body );
-  //   } )
-  //   .then( saveData )
-  //   .catch( err => {
-  //     historyData[ dataKey ] = {
-  //       message: `Error fetching data for ${ dataKey }`,
-  //       error: err
-  //     }
-  //   } );
 }
 
 function fetchData( dates ) {
   let results = [];
+  const dateKeys = Object.keys( dates );
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = ( "0" + ( now.getMonth() + 1 ) ).slice( -2 );
+  const currentDay = ( "0" + ( now.getDate() ) ).slice( -2 );
+  const currentDate = `${ currentYear }${ currentMonth }${ currentDay }`;
 
-  // TODO: iterate through the data that has not been fetched yet, and
-  // fetch 17 records (dates) at a time, until the data for all dates
-  // has been downloaded and populated
+  dateKeys.forEach( key => {
+    const date = historyData.dates[ key ];
 
-  dates.forEach( date => {
-    results.push( fetchDataFor.bind( null, date ) );
+    if( _.isEmpty( date.data ) ) {
+      if( runIndex < runLimit ) {
+        let apiCallsForCurrentDate = apiCalls[ currentDate ] || 0;
+        apiCalls[ currentDate ] = apiCallsForCurrentDate + 1;
+
+        if( apiCalls[ currentDate ] >= dailyApiCallLimit ) {
+          console.log( "Daily API call limit reached, aborting. Please try again tomorrow" );
+          process.exit();
+        } else {
+          results.push( fetchDataFor.bind( null, date.parts ) );
+          runIndex = ( runIndex + 1 );
+        }
+      }
+    } else {
+      console.log( `Data already fetched for ${ key }, skipping` );
+    }
   } );
 
   return sequence( results );
 }
 
+function runLimitHit( data ) {
+  const datesThatRemainToBeFetched = _.filter( historyData.dates, date => {
+    return _.isEmpty( date.data );
+  } ).length;
+  console.log( `Run limit hit for this session. ${ datesThatRemainToBeFetched } remain to be fetched.` );
+  saveData( data ).then( () => {
+    const diff = process.hrtime( startTime )
+    const time = timeFormat( diff );
+    console.log( "Process completed in ", time );
+  } ).then( () => {
+    process.exit();
+  } );
+}
+
 function calculateDatesToFetch() {
   return new Promise( ( resolve, reject ) => {
     const currentYear = new Date().getFullYear();
-    let dates = [];
     let startYear = ( currentYear - ( years + 1 ) );
     let year = startYear;
     let octoberDay, novemberDay;
@@ -108,7 +146,11 @@ function calculateDatesToFetch() {
           novemberDay = ( month === "11" && parseInt( day, 10 ) < 20 );
 
           if( octoberDay || novemberDay ) {
-            dates.push( { year, month, day } );
+            const key = `${ year }${ month }${ day }`;
+            historyData[ key ] = {
+              date: { year, month, day },
+              data: {}
+            };
           }
         } );
       } );
@@ -116,37 +158,38 @@ function calculateDatesToFetch() {
       startYear = ( startYear + 1 );
     }
 
-    console.log( `Fetching historical weather data for ${ dates.length } days over the past ${ years } years...\n` );
-    resolve( dates );
+    resolve( historyData );
   } );
 }
 
 function downloadData() {
-  const startTime = process.hrtime();
+  startTime = process.hrtime();
+  historyData = require( `${ __dirname }/weather-data.json` );
 
-  // TODO: open/load existing `weather-data.json` file if it exists
-  // if it exists, we don't need to `calculateDatesToFetch`, just
-  // use the data already loaded/saved in that file, and start
-  // processing/fetching data for dates that have not been fetched yet
-  // (need to make this an iterative process to prevent API abuse)
+  if( !_.isEmpty( historyData ) ) {
+    console.log( `Fetching historical weather data for ${ Object.keys( historyData.dates ).length } days over the past ${ years } years...\n` );
+    apiCalls = historyData.apiCalls;
 
-  calculateDatesToFetch()
-    .then( dates => {
-      fetchData( dates )
-        .then( data => {
-          saveData( data ).then( () => {
-            const diff = process.hrtime( startTime )
-            const time = timeFormat( diff );
-            console.log( "Process completed in ", time );
-          } );
+    fetchData( historyData.dates )
+      .then( data => {
+        runLimitHit( data );
+      } );
+  } else {
+    calculateDatesToFetch()
+      .then( dates => {
+        console.log( `Fetching historical weather data for ${ Object.keys( historyData.dates ).length } days over the past ${ years } years...\n` );
+        fetchData( dates )
+          .then( data => {
+            runLimitHit( data );
+          } )
+          .catch( err => {
+            console.log( "Error fetching data", err );
+          } )
         } )
-        .catch( err => {
-          console.log( "Error fetching data", err );
-        } )
-      } )
-    .catch( err => {
-      console.log( "Error calculating dates to fetch data for", err );
-    } );
+      .catch( err => {
+        console.log( "Error calculating dates to fetch data for", err );
+      } );
+  }
 }
 
 downloadData();
