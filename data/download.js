@@ -7,6 +7,8 @@ const moment = require( "moment" );
 const when = require( "when" );
 const sequence = require( "when/sequence" );
 const pipeline = require( "when/pipeline" );
+const logUpdate = require( "log-update" );
+const ora = require( "ora" );
 
 const years = 30;
 const months = [ "10", "11" ];
@@ -111,44 +113,41 @@ function updateApiCalls( date, count ) {
 }
 
 function fetchDataFor( { year, month, day } ) {
+  const key = `${ year }${ month }${ day }`;
+
   return when.promise( ( resolve, reject ) => {
     setTimeout( () => {
-      const key = `${ year }${ month }${ day }`;
-      let result = {};
       console.log( `Fetching data for ${ key }` );
 
-      got( url( { year, month, day } ) )
-        .then( response => {
-          result = {
-            parts: {
-              year,
-              month,
-              day
-            },
-            data: JSON.parse( response.body )
-          };
+      resolve( key );
 
-          historyData.dates[ key ] = result;
-          resolve( result );
-        } )
-        .catch( err => {
-          historyData.dates[ key ] = {
-            message: `Error fetching data for ${ key }`,
-            error: err
-          }
-        } );
+      // got( url( { year, month, day } ) )
+      //   .then( response => {
+      //     result = {
+      //       parts: {
+      //         year,
+      //         month,
+      //         day
+      //       },
+      //       data: JSON.parse( response.body )
+      //     };
+
+      //     historyData.dates[ key ] = result;
+      //     resolve( result );
+      //   } )
+      //   .catch( err => {
+      //     historyData.dates[ key ] = {
+      //       message: `Error fetching data for ${ key }`,
+      //       error: err
+      //     }
+      //   } );
     }, 7000 );
   } );
 }
 
 function fetchData( { datesToFetch, fetchedDates } ) {
-  // let results = [];
+  let datesToFetchForThisRun = [];
   const dateKeys = Object.keys( datesToFetch );
-  // const now = new Date();
-  // const currentYear = now.getFullYear();
-  // const currentMonth = ( "0" + ( now.getMonth() + 1 ) ).slice( -2 );
-  // const currentDay = ( "0" + ( now.getDate() ) ).slice( -2 );
-  // const currentDate = `${ currentYear }${ currentMonth }${ currentDay }`;
 
   getApiThrottlingData().then( apiThrottlingData => {
     const apiThrottlingDataForToday = _.find( apiThrottlingData, { date: today } );
@@ -159,36 +158,23 @@ function fetchData( { datesToFetch, fetchedDates } ) {
     }
 
     console.log( "todaysApiThrottlingData", apiThrottlingDataForToday );
-
     dateKeys.forEach( key => {
       const date = datesToFetch[ key ];
 
       if( _.includes( fetchedDates, key ) ) {
         console.log( `Data already fetched for ${ key }, skipping` );
-    //     if( runIndex < runLimit ) {
-    //       let apiCallsForCurrentDate = apiCalls[ currentDate ] || 0;
-    //       apiCalls[ currentDate ] = apiCallsForCurrentDate + 1;
-
-    //       if( apiCalls[ currentDate ] >= dailyApiCallLimit ) {
-    //         console.log( "Daily API call limit reached, aborting. Please try again tomorrow" );
-    //         process.exit();
-    //       } else {
-    //         results.push( fetchDataFor.bind( null, date.parts ) );
-    //         runIndex = ( runIndex + 1 );
-    //       }
-    //     }
       } else {
-        console.log( `Fetching data for ${ key }` );
-
-        // if( runIndex < runLimit ) {
-        //   console.log( "fetching data..." );
-        // }
+        if( runIndex < runLimit ) {
+          datesToFetchForThisRun.push( fetchDataFor.bind( null, date.parts ) );
+          runIndex = ( runIndex + 1 );
+        }
       }
     } );
+
+    console.log( `Fetching data for ${ datesToFetchForThisRun.length } dates (throttled run limit count)...` );
+
+    return sequence( datesToFetchForThisRun );
   } );
-
-
-  // return sequence( results );
 }
 
 function runLimitHit( data ) {
@@ -244,57 +230,6 @@ function downloadData() {
   } );
 
   pipeline( [ calculateDatesToFetch, getFetchedDates ] ).then( fetchData );
-
-  // if( !_.isEmpty( historyData ) ) {
-  //   console.log( `Fetching historical weather data for ${ Object.keys( historyData.dates ).length } days over the past ${ years } years...\n` );
-  //   apiCalls = historyData.apiCalls;
-
-  //   fetchData( historyData.dates )
-  //     .then( data => {
-  //       runLimitHit( data );
-  //     } );
-  // } else {
-  //   calculateDatesToFetch()
-  //     .then( dates => {
-  //       console.log( `Fetching historical weather data for ${ Object.keys( historyData.dates ).length } days over the past ${ years } years...\n` );
-  //       fetchData( dates )
-  //         .then( data => {
-  //           runLimitHit( data );
-  //         } )
-  //         .catch( err => {
-  //           console.log( "Error fetching data", err );
-  //         } )
-  //       } )
-  //     .catch( err => {
-  //       console.log( "Error calculating dates to fetch data for", err );
-  //     } );
-  // }
 }
 
 downloadData();
-
-function dbTesting() {
-  db = massive.connectSync( {
-    connectionString: config.db.getConnectionString()
-  } );
-
-  // db.raggeds_weather_history.save( {
-  //   date: "19851024",
-  //   weather_data: { message: "throwback data" }
-  // }, ( err, result ) => {
-  //   if( err ) {
-  //     console.log( "ERROR", err );
-  //     process.exit();
-  //   }
-
-  //   console.log( "Weather data saved", result );
-  //   process.exit();
-  // } );
-
-  getFetchedDates().then( results => {
-    console.log( "Fetched dates", results );
-    process.exit();
-  } );
-}
-
-// dbTesting();
