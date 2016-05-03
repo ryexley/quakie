@@ -1,3 +1,9 @@
 {
-  "weatherUndergroundApiKey": "9b2517907ff1cacd"
+  "weatherUndergroundApiKey": "9b2517907ff1cacd",
+  "db": {
+    "host": "localhost",
+    "database": "quakie",
+    "username": "quakie",
+    "password": "zNAg9@FFe@btt+=r8g78,426%X+8nT>z"
+  }
 }
