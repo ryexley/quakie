@@ -1,7 +1,5 @@
-// this file is intended for downloading historical weather data
-// and persisting it to a file called `weather-data.json`
 const _ = require( "lodash" );
-const config = require( "../config/index" ); // what is up with having to specify `index`?!
+const config = require( "../config/" );
 const got = require( "got" );
 const pfs = require( "promised-io/fs" );
 const massive = require( "massive" );
@@ -15,6 +13,7 @@ const months = [ "10", "11" ];
 const days = [ "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "01", "02", "03", "04", "05" ];
 const runLimit = 17;
 const dailyApiCallLimit = 500;
+const today = moment().format( "YYYYMMDD" );
 
 let db = {};
 let startTime = {};
@@ -71,6 +70,46 @@ function getFetchedDates( datesToFetch ) {
   } );
 }
 
+function getApiThrottlingData() {
+  return when.promise( ( resolve, reject ) => {
+    db.weather_underground_api_throttling.find( ( err, apiThrottlingData ) => {
+      if( err ) {
+        reject( err );
+      }
+
+      console.log( "api throttling data", apiThrottlingData );
+      const apiThrottlingDataForToday = _.find( apiThrottlingData, { date: today } );
+
+      if( !apiThrottlingDataForToday ) {
+        updateApiCalls( today, 0 )
+          .then( result => {
+            resolve( apiThrottlingData.concat( [ { id: result.id, date: today, api_call_count: 0 } ] ) );
+          } )
+          .catch( err => {
+            reject( new Error( "Failed to update API throttling data", err ) );
+          } );
+      }
+
+      resolve( apiThrottlingData );
+    } );
+  } );
+}
+
+function updateApiCalls( date, count ) {
+  return when.promise( ( resolve, reject ) => {
+    db.weather_underground_api_throttling.save( {
+      date: date,
+      api_call_count: count
+    }, ( err, result ) => {
+      if( err ) {
+        reject( err );
+      }
+
+      resolve( result );
+    } );
+  } );
+}
+
 function fetchDataFor( { year, month, day } ) {
   return when.promise( ( resolve, reject ) => {
     setTimeout( () => {
@@ -103,35 +142,51 @@ function fetchDataFor( { year, month, day } ) {
 }
 
 function fetchData( { datesToFetch, fetchedDates } ) {
-  console.log( "what did we get?", datesToFetch, fetchedDates );
   // let results = [];
-  // const dateKeys = Object.keys( dates );
+  const dateKeys = Object.keys( datesToFetch );
   // const now = new Date();
   // const currentYear = now.getFullYear();
   // const currentMonth = ( "0" + ( now.getMonth() + 1 ) ).slice( -2 );
   // const currentDay = ( "0" + ( now.getDate() ) ).slice( -2 );
   // const currentDate = `${ currentYear }${ currentMonth }${ currentDay }`;
 
-  // dateKeys.forEach( key => {
-  //   const date = historyData.dates[ key ];
+  getApiThrottlingData().then( apiThrottlingData => {
+    const apiThrottlingDataForToday = _.find( apiThrottlingData, { date: today } );
 
-  //   if( _.isEmpty( date.data ) ) {
-  //     if( runIndex < runLimit ) {
-  //       let apiCallsForCurrentDate = apiCalls[ currentDate ] || 0;
-  //       apiCalls[ currentDate ] = apiCallsForCurrentDate + 1;
+    if( apiThrottlingDataForToday.api_call_count >= dailyApiCallLimit ) {
+      console.log( "Daily API call limit reached, aborting. Please try again tomorrow" );
+      process.exit();
+    }
 
-  //       if( apiCalls[ currentDate ] >= dailyApiCallLimit ) {
-  //         console.log( "Daily API call limit reached, aborting. Please try again tomorrow" );
-  //         process.exit();
-  //       } else {
-  //         results.push( fetchDataFor.bind( null, date.parts ) );
-  //         runIndex = ( runIndex + 1 );
-  //       }
-  //     }
-  //   } else {
-  //     console.log( `Data already fetched for ${ key }, skipping` );
-  //   }
-  // } );
+    console.log( "todaysApiThrottlingData", apiThrottlingDataForToday );
+
+    dateKeys.forEach( key => {
+      const date = datesToFetch[ key ];
+
+      if( _.includes( fetchedDates, key ) ) {
+        console.log( `Data already fetched for ${ key }, skipping` );
+    //     if( runIndex < runLimit ) {
+    //       let apiCallsForCurrentDate = apiCalls[ currentDate ] || 0;
+    //       apiCalls[ currentDate ] = apiCallsForCurrentDate + 1;
+
+    //       if( apiCalls[ currentDate ] >= dailyApiCallLimit ) {
+    //         console.log( "Daily API call limit reached, aborting. Please try again tomorrow" );
+    //         process.exit();
+    //       } else {
+    //         results.push( fetchDataFor.bind( null, date.parts ) );
+    //         runIndex = ( runIndex + 1 );
+    //       }
+    //     }
+      } else {
+        console.log( `Fetching data for ${ key }` );
+
+        // if( runIndex < runLimit ) {
+        //   console.log( "fetching data..." );
+        // }
+      }
+    } );
+  } );
+
 
   // return sequence( results );
 }
