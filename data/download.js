@@ -13,7 +13,7 @@ const ora = require( "ora" );
 const years = 30;
 const months = [ "10", "11" ];
 const days = [ "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "01", "02", "03", "04", "05" ];
-const runLimit = 17;
+const runLimit = 2; // 17;
 const dailyApiCallLimit = 500;
 const today = moment().format( "YYYYMMDD" );
 
@@ -22,8 +22,8 @@ let startTime = {};
 let apiCalls = {};
 let runIndex = 0;
 
-function url( { year, month, day } ) {
-  return `http://api.wunderground.com/api/${ config.weatherUndergroundApiKey }/history_${ year }${ month }${ day }/q/CO/somerset.json`;
+function url( dateString ) {
+  return `http://api.wunderground.com/api/${ config.weatherUndergroundApiKey }/history_${ dateString }/q/CO/somerset.json`;
 }
 
 function timeFormat( diff ) {
@@ -63,8 +63,13 @@ function getFetchedDates( datesToFetch ) {
         return reject( err );
       }
 
+      console.log( "fetchedDates results", results );
+
       let fetchedDates = _.map( results, result => {
-        return moment( result.date ).format( "YYYYMMDD" );
+        let date = moment( result.date );
+        const utcOffset = date.utcOffset();
+        date = date.subtract( utcOffset, "minutes" );
+        return date.format( "YYYYMMDD" );
       } );
 
       return resolve( { datesToFetch, fetchedDates } );
@@ -79,29 +84,43 @@ function getApiThrottlingData() {
         reject( err );
       }
 
-      console.log( "api throttling data", apiThrottlingData );
       const apiThrottlingDataForToday = _.find( apiThrottlingData, { date: today } );
 
       if( !apiThrottlingDataForToday ) {
-        updateApiCalls( today, 0 )
+        // console.log( "found nothing for today...creating a new record..." );
+        updateApiCalls( { date: today, api_call_count: 0 } )
           .then( result => {
-            resolve( apiThrottlingData.concat( [ { id: result.id, date: today, api_call_count: 0 } ] ) );
+            // console.log( "Updated api throttling data", "result:", result );
+            resolve( ( apiThrottlingData || [] ).concat( [ result ] ) );
           } )
           .catch( err => {
             reject( new Error( "Failed to update API throttling data", err ) );
           } );
+      } else {
+        resolve( apiThrottlingData );
       }
-
-      resolve( apiThrottlingData );
     } );
   } );
 }
 
-function updateApiCalls( date, count ) {
+function updateApiCalls( apiThrottlingData ) {
+  console.log( "updateApiCalls", "apiThrottlingData:", apiThrottlingData );
   return when.promise( ( resolve, reject ) => {
-    db.weather_underground_api_throttling.save( {
+    db.weather_underground_api_throttling.save( apiThrottlingData, ( err, result ) => {
+      if( err ) {
+        reject( err );
+      }
+
+      resolve( result );
+    } );
+  } );
+}
+
+function saveWeatherData( date, weatherData ) {
+  return when.promise( ( resolve, reject ) => {
+    db.raggeds_weather_history.save( {
       date: date,
-      api_call_count: count
+      weather_data: weatherData
     }, ( err, result ) => {
       if( err ) {
         reject( err );
@@ -112,7 +131,7 @@ function updateApiCalls( date, count ) {
   } );
 }
 
-function fetchDataFor( { year, month, day } ) {
+function fetchDataFor( { year, month, day }, apiThrottlingData ) {
   const key = `${ year }${ month }${ day }`;
 
   return when.promise( ( resolve, reject ) => {
@@ -121,26 +140,34 @@ function fetchDataFor( { year, month, day } ) {
 
       resolve( key );
 
-      // got( url( { year, month, day } ) )
-      //   .then( response => {
-      //     result = {
-      //       parts: {
-      //         year,
-      //         month,
-      //         day
-      //       },
-      //       data: JSON.parse( response.body )
-      //     };
+      got( url( key ) )
+        .then( response => {
+          const weatherData = {
+            date: { year, month, day },
+            data: response.body
+          };
 
-      //     historyData.dates[ key ] = result;
-      //     resolve( result );
-      //   } )
-      //   .catch( err => {
-      //     historyData.dates[ key ] = {
-      //       message: `Error fetching data for ${ key }`,
-      //       error: err
-      //     }
-      //   } );
+          saveWeatherData( key, weatherData ).then( result => {
+            console.log( `Weather history data successfully fetched and saved for ${ key } (new record id: ${ result.id })` );
+            resolve( );
+          } )
+          .catch( err => {
+            console.log( `Error saving weather data for ${ key }:\n${ err }` );
+            process.exit();
+          } )
+          .finally( () => {
+            apiThrottlingData.api_call_count = ( apiThrottlingData.api_call_count + 1 );
+            // just need to update this value, no need to do anything with the result
+            // but we have to handle the promise returned
+            updateApiCalls( apiThrottlingData ).then( _.identity );
+          } );
+        } )
+        .catch( err => {
+          historyData.dates[ key ] = {
+            message: `Error fetching data for ${ key }`,
+            error: err
+          }
+        } );
     }, 7000 );
   } );
 }
@@ -150,14 +177,15 @@ function fetchData( { datesToFetch, fetchedDates } ) {
   const dateKeys = Object.keys( datesToFetch );
 
   getApiThrottlingData().then( apiThrottlingData => {
+    console.log( "apiThrottlingData:", apiThrottlingData );
     const apiThrottlingDataForToday = _.find( apiThrottlingData, { date: today } );
+    console.log( "apiThrottlingDataForToday", apiThrottlingDataForToday );
 
-    if( apiThrottlingDataForToday.api_call_count >= dailyApiCallLimit ) {
+    if( apiThrottlingDataForToday && apiThrottlingDataForToday.api_call_count >= dailyApiCallLimit ) {
       console.log( "Daily API call limit reached, aborting. Please try again tomorrow" );
       process.exit();
     }
 
-    console.log( "todaysApiThrottlingData", apiThrottlingDataForToday );
     dateKeys.forEach( key => {
       const date = datesToFetch[ key ];
 
@@ -165,7 +193,7 @@ function fetchData( { datesToFetch, fetchedDates } ) {
         console.log( `Data already fetched for ${ key }, skipping` );
       } else {
         if( runIndex < runLimit ) {
-          datesToFetchForThisRun.push( fetchDataFor.bind( null, date.parts ) );
+          datesToFetchForThisRun.push( fetchDataFor.bind( null, date.parts, apiThrottlingDataForToday ) );
           runIndex = ( runIndex + 1 );
         }
       }
