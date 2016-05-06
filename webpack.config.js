@@ -1,5 +1,13 @@
 import path from "path";
 import webpack from "webpack";
+import HtmlWebpackPlugin from "html-webpack-plugin";
+
+const indexFileOptions = {
+  title: "Quakie: Raggeds Wilderness Weather History Statistics",
+  template: "./src/index.html",
+  filename: "./ui/index.html",
+  inject: false
+};
 
 const config = {
   entry: [
@@ -9,16 +17,23 @@ const config = {
   output: {
     filename: "./ui/js/quakie.js"
   },
+  plugins: [
+    new webpack.optimize.DedupePlugin(),
+    // new webpack.optimize.UglifyJsPlugin( { compress: { warnings: false } } ),
+    new HtmlWebpackPlugin( indexFileOptions )
+  ],
+  resolve: ["", ".js", ".jsx", ".json"],
   devtool: "source-map",
   module: {
     loaders: [
+      { test: /\.(json)$/, loader: "json-loader" },
       {
-        test: "/\.(js|jsx)$/",
+        test: /\.(js|jsx)$/,
         include: "./src",
         loader: "babel",
         query: {
           presets: [ "es2015", "react" ],
-          plugins: [ "add-module-exports" ]
+          plugins: [ "transform-runtime", "add-module-exports" ]
         }
       }
     ]

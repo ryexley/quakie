@@ -1,3 +1,6 @@
-setTimeout( () => {
-  console.log( "Is this thing on?" );
-}, 250 );
+import React from "react";
+import ReactDOM from "react-dom";
+import App from "./app";
+
+// ReactDOM.render( <App />, document.getElementById( "root" ) );
+console.log( "Is this thing on?" );
