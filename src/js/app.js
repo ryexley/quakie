@@ -9,7 +9,7 @@ class App extends React.Component {
       </section>
     );
   }
-}
+};
 
 App.propTypes = {};
 

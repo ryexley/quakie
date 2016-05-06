@@ -29,7 +29,7 @@ const config = {
       { test: /\.(json)$/, loader: "json-loader" },
       {
         test: /\.(js|jsx)$/,
-        include: "./src",
+        include: path.resolve( __dirname, "./src" ),
         loader: "babel",
         query: {
           presets: [ "es2015", "react" ],
