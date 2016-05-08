@@ -1,15 +1,14 @@
+import { get } from "lodash";
 import postal from "postal";
 import DiagnosticsWireTap from "postal.diagnostics";
 import { EventEmitterModule as EventEmitter } from "./event-emitter";
 
-const messenger = ( { target, channelName = "app" } ) => {
+const messenger = ( { target } ) => {
 
   class MessengerModule extends target {
     constructor() {
-      super();
+      super( ...arguments );
 
-      this.channelName = channelName;
-      this.channel = postal.channel( channelName );
       this._messaging = {};
     }
 
@@ -17,8 +16,9 @@ const messenger = ( { target, channelName = "app" } ) => {
       examples:
         this.publish( "some.topic", { some: "data" } );
     */
-    publish( topic, data ) {
-      return this.channel.publish.call( this.channel, {
+    publish( { channel = "app", topic, data = {} } ) {
+      return postal.publish( {
+        channel,
         topic,
         data
       } );
@@ -29,15 +29,16 @@ const messenger = ( { target, channelName = "app" } ) => {
         this.subscribe( { topic: "some.topic", handler } );
         this.subscribe( { channel: "some-channel", topic: "some.topic", handler } );
     */
-    subscribe( { channel = this.channelName, topic, handler } ) {
+    subscribe( { channel = "app", topic, handler } ) {
+      // brute force...WHY IS THIS NOT ALREADY SET HERE?!
+      // ...it is in every other function on this object...
+      // the need for this doesn't make any sense at all
+      this._messaging = this._messaging || {};
+
       const key = `${ channel } ${ topic }`;
       let subscription = {};
 
-      if ( channel !== this.channelName ) {
-        subscription = postal.subscribe( { channel, topic, callback: handler } ).context( this );
-      } else {
-        subscription = this.channel.subscribe( topic, handler ).context( this );
-      }
+      subscription = postal.subscribe( { channel, topic, callback: handler } ).context( this );
 
       if ( !this._messaging.subscriptions ) {
         this._messaging.subscriptions = {};

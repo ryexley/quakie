@@ -5,5 +5,8 @@
     "database": "",
     "username": "",
     "password": ""
+  },
+  "api": {
+    "root": "http://example.com"
   }
 }

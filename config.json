@@ -5,5 +5,8 @@
     "database": "quakie",
     "username": "quakie",
     "password": "zNAg9@FFe@btt+=r8g78,426%X+8nT>z"
+  },
+  "api": {
+    "root": "http://localhost:7000/api/"
   }
 }

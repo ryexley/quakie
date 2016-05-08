@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+require( "babel-register" );
+var debug = require( "debug" )( "quakie" );
+var express = require( "../server" );
+
+express.set( "port", process.env.PORT || "7000" );
+
+var server = express.listen( express.get( "port" ), function () {
+  debug( "Quakie server listening on port " + server.address().port );
+} );

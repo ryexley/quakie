@@ -6,7 +6,7 @@ export default () => {
     constructor() {}
 
     requestWeatherData() {
-      console.log( "I need some weather data" );
+      this.publish( { topic: "weather-data.requested" } );
     }
   };
 
