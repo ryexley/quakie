@@ -1,4 +1,5 @@
-import got from "got";
+import axios from "axios";
+import when from "when";
 import messenger from "../composers/messenger";
 
 export default ( config ) => {
@@ -13,7 +14,16 @@ export default ( config ) => {
     }
 
     getAllWeatherData() {
-      console.log( "Fetching all weather history data" );
+      axios.get( `${ this.api.root }/weather-data` )
+        .then( response => {
+          this.publish( {
+            topic: "weather-data.fetched",
+            data: response.data
+          } );
+        } )
+        .catch( err => {
+          throw new Error( "Error fetching weather history data", err );
+        } );
     }
   }
 

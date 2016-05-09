@@ -117,10 +117,10 @@ function saveWeatherData( date, weatherData ) {
   return when.promise( ( resolve, reject ) => {
     db.raggeds_weather_history.save( {
       date: date,
-      year: weatherData.year,
-      month: weatherData.month,
-      day: weatherData.day,
-      weather_data: weatherData
+      year: weatherData.date.year,
+      month: weatherData.date.month,
+      day: weatherData.date.day,
+      weather_data: weatherData.fetchedResults
     }, ( err, result ) => {
       if( err ) {
         reject( err );
@@ -140,12 +140,11 @@ function fetchDataFor( { year, month, day }, apiThrottlingData ) {
     setTimeout( () => {
       got( url( key ) )
         .then( response => {
+          // console.log( "results", response.body );
+          // resolve( key );
           const weatherData = {
-            year,
-            month,
-            day,
             date: { year, month, day },
-            data: response.body
+            fetchedResults: JSON.parse( response.body )
           };
 
           saveWeatherData( key, weatherData ).then( result => {
