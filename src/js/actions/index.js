@@ -1,17 +1,12 @@
-import messenger from "../composers/messenger";
+import { extend } from "lodash";
+import messenger from "../mixins/messenger";
 
-export default () => {
+function Actions() {};
 
-  class Actions {
-    constructor() {}
+extend( Actions.prototype, {
+  requestWeatherData() {
+    this.publish( { topic: "weather-data.requested" } );
+  }
+}, messenger );
 
-    requestWeatherData() {
-      this.publish( { topic: "weather-data.requested" } );
-    }
-  };
-
-  Actions = messenger( { target: Actions } );
-
-  return new Actions();
-
-};
+export default Actions;

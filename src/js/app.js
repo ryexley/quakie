@@ -1,7 +1,8 @@
+import { extend } from "lodash";
 import React from "react";
 import ReactDOM from "react-dom";
 import Actions from "./actions";
-import messenger from "./composers/messenger";
+import messenger from "./mixins/messenger";
 
 class App extends React.Component {
   constructor() {
@@ -31,6 +32,6 @@ App.propTypes = {};
 
 App.defaultProps = {};
 
-App = messenger( { target: App } );
+extend( App.prototype, messenger );
 
 export default App;
