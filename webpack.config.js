@@ -1,7 +1,11 @@
 var path = require( "path" );
 var webpack = require( "webpack" );
+var autoprefixer = require( "autoprefixer" );
+var imports = require( "postcss-easy-import" );
+var nested = require( "postcss-nested" );
+var variables = require( "postcss-simple-vars" );
+var mixins = require( "postcss-mixins" );
 
-// const config = {
 module.exports = {
   entry: [
     "babel-polyfill",
@@ -30,24 +34,25 @@ module.exports = {
           presets: [ "es2015", "react" ],
           plugins: [ "transform-runtime", "add-module-exports" ]
         }
+      },
+      {
+        test: /\.(css)$/,
+        include: path.resolve( __dirname, "./src" ),
+        loaders: [
+          "style",
+          "css?sourceMap",
+          "postcss"
+        ]
       }
     ]
+  },
+  postcss: function() {
+    return [
+      autoprefixer( { browsers: [ "last 2 version" ] } ),
+      imports( { path: path.join( __dirname, "./src" ), glob: true } ),
+      mixins,
+      nested,
+      variables()
+    ];
   }
 };
-
-// webpack( config, ( err, stats ) => {
-//   if( err ) {
-//     console.error( "Webpack error\n", err );
-//   }
-
-//   console.log( stats.toString( {
-//     colors: true,
-//     hash: false,
-//     version: true,
-//     timings: true,
-//     chunks: true,
-//     chunkModules: false,
-//     cached: true,
-//     cachedAssets: true
-//   } ) );
-// } );

@@ -3,6 +3,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 import Actions from "./actions";
 import messenger from "./mixins/messenger";
+import AnnualAveragesChart from "./components/charts/annual-averages-chart";
+import "../css/app.global.css";
 
 class App extends React.Component {
   constructor() {
@@ -22,7 +24,7 @@ class App extends React.Component {
 
     return (
       <section>
-        Is this thing on?
+        <AnnualAveragesChart />
       </section>
     );
   }

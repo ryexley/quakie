@@ -1,0 +1,10 @@
+@import "./common/variables";
+@import "./common/mixins";
+@import "./common/typography";
+@import "./common/layout";
+
+body {
+  background-color: $appBackgroundColor;
+  color: $baseFontColor;
+  margin: 1rem;
+}
