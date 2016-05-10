@@ -22,6 +22,7 @@ extend( DataClient.prototype, {
         } );
       } )
       .catch( err => {
+        console.log( "Error fetching weather history data", err );
         throw new Error( "Error fetching weather history data", err );
       } );
   }

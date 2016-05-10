@@ -1,3 +1,4 @@
 .lineChart {
-  color: blue;
+  display: block;
+  width: 100%;
 }

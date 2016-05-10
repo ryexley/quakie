@@ -1,6 +1,7 @@
-import { extend } from "lodash";
+import { extend, zipObject } from "lodash";
+import when from "when";
 import messenger from "../mixins/messenger";
-import transforms from "./transforms";
+import parsers from "./parsers";
 
 function AppState() {
   this.state = {};
@@ -13,9 +14,17 @@ extend( AppState.prototype, {
   },
 
   onDataFetched( data, env ) {
-    transforms.transformWeatherHistoryData( data ).then( results => {
-      this.state.weatherHistoryData = results;
+    when.all( [
+      parsers.transformRawWeatherHistoryData( data ),
+      parsers.parseAnnualAveragesData( data )
+    ] ).then( results => {
+      this.state = zipObject( [
+        "weatherHistoryData",
+        "annualAveragesData"
+      ], results );
       this.publish( { topic: "state.changed", data: this.state } );
+    } ).catch( err => {
+      throw err;
     } );
   }
 }, messenger );
