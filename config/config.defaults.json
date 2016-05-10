@@ -7,6 +7,6 @@
     "password": ""
   },
   "api": {
-    "root": "http://example.com"
+    "root": "http://localhost:7000/api"
   }
 }
