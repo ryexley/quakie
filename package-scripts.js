@@ -1,8 +1,8 @@
 module.exports = {
   scripts: {
     build: {
-      default: "clear && webpack --config ./webpack.config.js",
-      watch: "clear && webpack --config ./webpack.config.js --watch"
+      default: "clear && webpack --config ./webpack.config.js --progress",
+      watch: "clear && webpack --config ./webpack.config.js --watch --progress"
     },
     server: {
       default: "clear && DEBUG=quakie* ./node_modules/.bin/node-dev ./bin/server"
