@@ -20,8 +20,8 @@ export default {
     let averages = {};
     let labels = [];
     let means = [];
-    let highs = [];
     let lows = [];
+    let highs = [];
 
     return when.promise( ( resolve, reject ) => {
       data.forEach( item => {
@@ -40,6 +40,13 @@ export default {
         averages[ year ].means.push( summary.meantempi );
         averages[ year ].lows.push( summary.mintempi );
         averages[ year ].highs.push( summary.maxtempi );
+      } );
+
+      Object.keys( averages ).forEach( year => {
+        labels.push( year );
+        means.push( Math.round( math.mean( averages[ year ].means ) ) );
+        lows.push( Math.round( math.mean( averages[ year ].lows ) ) );
+        highs.push( Math.round( math.mean( averages[ year ].highs ) ) );
       } );
 
       const averagesData = {

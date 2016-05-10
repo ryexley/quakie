@@ -16,6 +16,10 @@ class LineChart extends React.Component {
     this.renderChart();
   }
 
+  componentDidUpdate() {
+    this.renderChart();
+  }
+
   render() {
     return (
       <canvas { ...this.props.attributes } className={ styles.lineChart } ref={ lc => this.lineChart = lc }>

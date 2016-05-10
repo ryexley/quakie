@@ -10,6 +10,22 @@ class App extends React.Component {
   constructor() {
     super();
     this.actions = new Actions();
+    this.initState();
+    this.setupSubscriptions();
+  }
+
+  initState() {
+    this.state = {
+      annualAveragesData: { labels: [], datasets: [] }
+    };
+  }
+
+  setupSubscriptions() {
+    this.subscribe( { topic: "state.changed", handler: this.onStateChanged } );
+  }
+
+  onStateChanged( data, env ) {
+    this.setState( data );
   }
 
   componentWillMount() {
@@ -24,15 +40,11 @@ class App extends React.Component {
 
     return (
       <section>
-        <AnnualAveragesChart />
+        <AnnualAveragesChart data={ this.state.annualAveragesData } />
       </section>
     );
   }
 };
-
-App.propTypes = {};
-
-App.defaultProps = {};
 
 extend( App.prototype, messenger );
 
