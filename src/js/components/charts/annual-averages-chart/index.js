@@ -1,11 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import LineChart from "../line-chart";
+import styles from "./style.css";
 
 class AnnualAveragesChart extends React.Component {
   render() {
     return (
-      <div>
+      <div className={ styles.annualAveragesChart }>
         TODO: render an annual averages chart
         <LineChart />
       </div>

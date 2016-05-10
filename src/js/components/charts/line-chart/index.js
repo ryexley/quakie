@@ -1,10 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom";
+import styles from "./style.css";
 
 class LineChart extends React.Component {
   render() {
     return (
-      <div>
+      <div className={ styles.lineChart }>
         TODO: render a line chart
       </div>
     );
