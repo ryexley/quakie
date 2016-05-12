@@ -12,25 +12,28 @@ class AnnualAveragesChart extends React.Component {
     // apply some styling to the datasets
     // TODO: try to figure out why this works...it *works*, but I don't really understand how or why
     merge( clone( data.datasets ), [ {
+        // wind speeds
+        pointBackgroundColor: "rgba( 235, 235, 235, 1 )",
+        borderColor: "rgba( 235, 235, 235, 1 )",
+        backgroundColor: "rgba( 235, 235, 235, 0.5 )",
+        borderWidth: 1
+      }, {
        // average
-        pointBackgroundColor: "rgba( 165, 165, 165, 1 )",
-        borderColor: "rgba( 165, 165, 165, 1 )",
-        backgroundColor: "rgba( 255, 255, 255, 0.9 )",
-        fill: false,
+        pointBackgroundColor: "rgba( 70, 70, 70, 1 )",
+        borderColor: "rgba( 70, 70, 70, 1 )",
+        backgroundColor: "rgba( 165, 165, 165, 0.3 )",
         borderWidth: 1
       }, {
         // highs
         pointBackgroundColor: "rgba( 255, 0, 0, 1 )",
         borderColor: "rgba( 255, 0, 0, 1 )",
         backgroundColor: "rgba( 255, 0, 0, 0.1 )",
-        fill: false,
         borderWidth: 1
       }, {
         // lows
         pointBackgroundColor: "rgba( 0, 105, 205, 1 )",
         borderColor: "rgba( 0, 105, 205, 1 )",
         backgroundColor: "rgba( 0, 105, 205, 0.1 )",
-        fill: false,
         borderWidth: 1
       } ] );
 

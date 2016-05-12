@@ -1,5 +1,5 @@
-const buildDefaultCommand = "clear && cp -rf ./src/i18n/locales ./server/public && webpack --config ./webpack.config.js --progress";
-const buildWatchCommand = "clear && cp -rf ./src/i18n/locales ./server/public && webpack --config ./webpack.config.js --watch --progress";
+const buildDefaultCommand = "clear && webpack --config ./webpack.config.js --progress";
+const buildWatchCommand = "clear && webpack --config ./webpack.config.js --progress --watch";
 
 module.exports = {
   scripts: {

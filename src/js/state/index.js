@@ -3,7 +3,8 @@ import when from "when";
 import messenger from "../mixins/messenger";
 import parsers from "./parsers";
 
-function AppState() {
+function AppState( options ) {
+  this.i18n = options.i18n;
   this.state = {};
   this.setupSubscriptions();
 }
@@ -16,7 +17,7 @@ extend( AppState.prototype, {
   onDataFetched( data, env ) {
     when.all( [
       parsers.transformRawWeatherHistoryData( data ),
-      parsers.parseAnnualAveragesData( data )
+      parsers.parseAnnualAveragesData( data, this.i18n.data.annualAveragesChart )
     ] ).then( results => {
       this.state = zipObject( [
         "weatherHistoryData",

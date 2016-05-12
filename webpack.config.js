@@ -1,12 +1,13 @@
 var path = require( "path" );
 var webpack = require( "webpack" );
 var ExtractTextPlugin = require( "extract-text-webpack-plugin" );
+var CopyPlugin = require( "copy-webpack-plugin" );
 var autoprefixer = require( "autoprefixer" );
 var imports = require( "postcss-easy-import" );
 var nested = require( "postcss-nested" );
 var variables = require( "postcss-simple-vars" );
 var mixins = require( "postcss-mixins" );
-var cssLoaders = "css?modules&importLoaders=1&localIdentName=[name]-[local]-[hash:base64:7]!postcss";
+var cssLoaders = "css?modules&importLoaders=1&localIdentName=[name]--[local]--[hash:base64:7]!postcss";
 
 module.exports = {
   entry: [
@@ -17,6 +18,11 @@ module.exports = {
     filename: "./server/public/js/quakie.js"
   },
   plugins: [
+    new CopyPlugin( [ {
+      from: path.resolve( __dirname, "src/i18n/locales" ),
+      to: path.resolve( __dirname, "server/public/locales" ),
+      force: true
+    } ] ),
     new ExtractTextPlugin( "./server/public/css/style.css" ),
     new webpack.optimize.DedupePlugin(),
     // new webpack.optimize.UglifyJsPlugin( { compress: { warnings: false } } ),

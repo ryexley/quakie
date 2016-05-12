@@ -16,12 +16,13 @@ export default {
     } );
   },
 
-  parseAnnualAveragesData( data ) {
+  parseAnnualAveragesData( data, localizationData ) {
     let averages = {};
     let labels = [];
     let means = [];
     let lows = [];
     let highs = [];
+    let winds = [];
 
     return when.promise( ( resolve, reject ) => {
       data.forEach( item => {
@@ -33,13 +34,15 @@ export default {
           averages[ year ] = {
             means: [],
             lows: [],
-            highs: []
+            highs: [],
+            winds: []
           };
         }
 
         averages[ year ].means.push( summary.meantempi );
         averages[ year ].lows.push( summary.mintempi );
         averages[ year ].highs.push( summary.maxtempi );
+        averages[ year ].winds.push( summary.meanwindspdi );
       } );
 
       Object.keys( averages ).forEach( year => {
@@ -47,18 +50,22 @@ export default {
         means.push( Math.round( math.mean( averages[ year ].means ) ) );
         lows.push( Math.round( math.mean( averages[ year ].lows ) ) );
         highs.push( Math.round( math.mean( averages[ year ].highs ) ) );
+        winds.push( Math.round( math.mean( averages[ year ].winds ) ) );
       } );
 
       const averagesData = {
         labels,
         datasets: [ {
-          label: "Annual Average",
+          label: localizationData.legend.averageWindSpeedLabel,
+          data: winds
+        }, {
+          label: localizationData.legend.overallAverageLabel,
           data: means
         }, {
-          label: "Average High",
+          label: localizationData.legend.averageHighLabel,
           data: highs
         }, {
-          label: "Average Low",
+          label: localizationData.legend.averageLowLabel,
           data: lows
         } ]
       };

@@ -8,12 +8,13 @@ import App from "./app";
 
 ( function() {
 
-  new DataClient( config.server.api );
-  new AppState();
-
   i18n.load( { serverRoot: config.server.root } ).then( localizationData => {
-    const props = { i18n: localizationData };
-    ReactDOM.render( <App { ...props } />, document.getElementById( "root" ) );
+    const options = { i18n: localizationData };
+
+    new DataClient( config.server.api );
+    new AppState( options );
+
+    ReactDOM.render( <App { ...options } />, document.getElementById( "root" ) );
   } );
 
 }() );

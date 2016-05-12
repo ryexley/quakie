@@ -1,5 +1,11 @@
 {
   "annualAveragesChart": {
+    "legend": {
+      "overallAverageLabel": "Overall Average Temp",
+      "averageHighLabel": "Average High",
+      "averageLowLabel": "Average Low",
+      "averageWindSpeedLabel": "Average Wind Speed"
+    },
     "description": "This chart displays the average temperatures (overall average, average high and average low) for the periods between October 20th and November 5th for each year between 1985 and 2015."
   },
   "annualWeatherSelectorChart": {}
