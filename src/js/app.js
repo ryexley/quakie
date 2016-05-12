@@ -37,10 +37,9 @@ class App extends React.Component {
   }
 
   render() {
-
     return (
       <section>
-        <AnnualAveragesChart data={ this.state.annualAveragesData } />
+        <AnnualAveragesChart i18n={ this.props.i18n } data={ this.state.annualAveragesData } />
       </section>
     );
   }

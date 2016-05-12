@@ -6,7 +6,10 @@
     "username": "",
     "password": ""
   },
-  "api": {
-    "root": "http://localhost:7000/api"
+  "server": {
+    "root": "http://localhost:7000",
+    "api": {
+      "root": "http://localhost:7000/api"
+    }
   }
 }
