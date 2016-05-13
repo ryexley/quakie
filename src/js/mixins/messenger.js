@@ -70,7 +70,12 @@ const messenger = extend( {
         name: "console",
         active,
         writer( output ) {
-          console.log( "%cPostal message:", "color: #390", JSON.parse( output ) );
+          try {
+            const data = JSON.parse( output );
+            console.log( "%cPostal message:", "color: #390", data );
+          } catch( err ) {
+            console.log( "%cPostal message:", "color: #f00", "(unable to parse data (circular reference?))" );
+          }
         }
       } );
     }

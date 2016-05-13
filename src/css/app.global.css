@@ -8,3 +8,7 @@ body {
   color: $baseFontColor;
   margin: 1rem;
 }
+
+a, a:link, a:visited {
+  color: $linkColor;
+}

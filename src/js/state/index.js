@@ -10,24 +10,49 @@ function AppState( options ) {
 }
 
 extend( AppState.prototype, {
+
   setupSubscriptions() {
     this.subscribe( { topic: "weather-data.fetched", handler: this.onDataFetched } );
+    this.subscribe( { topic: "selected-year.changed", handler: this.onSelectedYearChanged } );
   },
 
   onDataFetched( data, env ) {
     when.all( [
       parsers.transformRawWeatherHistoryData( data ),
-      parsers.parseAnnualAveragesData( data, this.i18n.data.annualAveragesChart )
+      parsers.parseAnnualAveragesData( data, this.i18n.data.annualAveragesChart ),
+      parsers.parseAnnualWeatherSelectorData( data, this.i18n.data.annualWeatherSelectorChart )
     ] ).then( results => {
       this.state = zipObject( [
         "weatherHistoryData",
-        "annualAveragesData"
+        "annualAveragesData",
+        "annualWeatherSelectorChartData"
       ], results );
-      this.publish( { topic: "state.changed", data: this.state } );
+
+      this.stateChanged();
     } ).catch( err => {
       throw err;
     } );
+  },
+
+  onSelectedYearChanged( data, env ) {
+    const annualWeatherSelectorChartData = this.state.annualWeatherSelectorChartData;
+    const newState = extend( {}, this.state, {
+      annualWeatherSelectorChartData: {
+        annualWeatherData: annualWeatherSelectorChartData.annualWeatherData,
+        years: annualWeatherSelectorChartData.years,
+        selectedYear: data,
+        selectedYearData: annualWeatherSelectorChartData.annualWeatherData[ data ]
+      }
+    } );
+
+    this.state = newState;
+    this.stateChanged();
+  },
+
+  stateChanged() {
+    this.publish( { topic: "state.changed", data: this.state } );
   }
+
 }, messenger );
 
 export default AppState;

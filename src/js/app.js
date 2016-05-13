@@ -4,6 +4,7 @@ import ReactDOM from "react-dom";
 import Actions from "./actions";
 import messenger from "./mixins/messenger";
 import AnnualAveragesChart from "./components/charts/annual-averages-chart";
+import AnnualWeatherSelectorChart from "./components/charts/annual-weather-selector";
 import "../css/app.global.css";
 
 class App extends React.Component {
@@ -16,7 +17,8 @@ class App extends React.Component {
 
   initState() {
     this.state = {
-      annualAveragesData: { labels: [], datasets: [] }
+      annualAveragesData: null,
+      AnnualWeatherSelectorChartData: null
     };
   }
 
@@ -40,6 +42,7 @@ class App extends React.Component {
     return (
       <section>
         <AnnualAveragesChart i18n={ this.props.i18n } data={ this.state.annualAveragesData } />
+        <AnnualWeatherSelectorChart i18n={ this.props.i18n } data={ this.state.annualWeatherSelectorChartData } />
       </section>
     );
   }

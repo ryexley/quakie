@@ -6,7 +6,7 @@ import styles from "./style.css";
 class LineChart extends React.Component {
   renderChart() {
     const componentEl = ReactDOM.findDOMNode( this.lineChart );
-    new Chart( componentEl, {
+    this.chart = new Chart( componentEl, {
       type: "line",
       data: this.props.chartData
     } );
@@ -17,6 +17,7 @@ class LineChart extends React.Component {
   }
 
   componentDidUpdate() {
+    this.chart.destroy();
     this.renderChart();
   }
 

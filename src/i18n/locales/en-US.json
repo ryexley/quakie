@@ -1,5 +1,6 @@
 {
   "annualAveragesChart": {
+    "loadingMessage": "Loading Annual Averages Chart Data",
     "legend": {
       "overallAverageLabel": "Overall Average Temp",
       "averageHighLabel": "Average High",
@@ -8,5 +9,14 @@
     },
     "description": "This chart displays the average temperatures (overall average, average high and average low) for the periods between October 20th and November 5th for each year between 1985 and 2015."
   },
-  "annualWeatherSelectorChart": {}
+  "annualWeatherSelectorChart": {
+    "loadingMessage": "Loading Annual Weather Selector Chart Data",
+    "legend": {
+      "averageTempLabel": "Average",
+      "averageHighLabel": "High",
+      "averageLowLabel": "Low",
+      "averageWindSpeedLabel": "Average Wind Speed"
+    },
+    "description": "This chart shows weather data for each day between October 20th and November 5th for the selected year. Select the year you wish to view weather data for by clicking on one of the years in the list below the chart."
+  }
 }
